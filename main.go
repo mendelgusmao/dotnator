@@ -23,9 +23,9 @@ From https://support.google.com/mail/answer/10313
 
 	It's just a proof of concept and should not be used seriously. Some smart spammers might just
 	remove the dots (and/or the plus sign and what comes after) from the addresses they receive.
+	Also, the services you use can simply consider your address as not valid.
 
 	Usage: dotnator <email address> <service name or address> [salt]
-
 */
 
 func main() {
@@ -54,20 +54,12 @@ func main() {
 	crc := crc64.Checksum(key, crc64.MakeTable(crc64.ECMA))
 	crcp := fmt.Sprintf("%063s", strconv.FormatInt(int64(crc), 2))
 	index := int(service[0]) % (63 - len(username))
-	dots := make(map[int]bool)
-
-	for i := index; i < index+len(username)-1; i++ {
-		if crcp[i] == '1' {
-			dots[i-index] = true
-		}
-	}
-
 	name := ""
 
 	for i := 0; i < len(username); i++ {
 		name += string(username[i])
 
-		if _, ok := dots[i]; ok {
+		if crcp[i+index] == '1' && i < len(username)-1 {
 			name += "."
 		}
 	}
