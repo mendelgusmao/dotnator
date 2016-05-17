@@ -59,14 +59,16 @@ func main() {
 	key := append([]byte(salt), []byte(service)...)
 	crc := crc64.Checksum(key, crc64.MakeTable(crc64.ECMA))
 	crcp := fmt.Sprintf("%063s", strconv.FormatInt(int64(crc), 2))
-	index := int(service[0]) % (63 - len(username))
-	name := ""
 
-	for i := 0; i < len(username); i++ {
-		name += string(username[i])
+	size := len(username)
+	index := int(service[0]) % (63 - size)
+	name := make([]byte, 0)
 
-		if crcp[i+index] == '1' && i < len(username)-1 {
-			name += "."
+	for i := 0; i < size; i++ {
+		name = append(name, username[i])
+
+		if crcp[i+index] == '1' && i < size-1 {
+			name = append(name, '.')
 		}
 	}
 
