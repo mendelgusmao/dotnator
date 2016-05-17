@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"hash/crc64"
+	"net/mail"
 	"os"
 	"strconv"
 	"strings"
@@ -34,8 +35,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if _, err := mail.ParseAddress(os.Args[1]); err != nil {
+		fmt.Fprintln(os.Stderr, "invalid email address")
+		os.Exit(1)
+	}
+
 	email := strings.Split(os.Args[1], "@")
-	username, server := email[0], email[1]
+	username, host := email[0], email[1]
 	service := os.Args[2]
 	salt := ""
 
@@ -64,5 +70,5 @@ func main() {
 		}
 	}
 
-	fmt.Printf("%s%s@%s\n", name, plus, server)
+	fmt.Printf("%s%s@%s\n", name, plus, host)
 }
