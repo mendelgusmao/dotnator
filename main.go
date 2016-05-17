@@ -38,7 +38,7 @@ func main() {
 	plus := ""
 
 	if i := strings.Index(username, "+"); i > -1 {
-		plus = username[i+1:]
+		plus = username[i:]
 		username = username[0:i]
 	}
 
@@ -63,10 +63,6 @@ func main() {
 		if _, ok := dots[i]; ok {
 			name += "."
 		}
-	}
-
-	if len(plus) > 0 {
-		plus = "+" + plus
 	}
 
 	fmt.Printf("%s%s@%s\n", name, plus, server)
