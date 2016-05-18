@@ -29,7 +29,6 @@ From https://support.google.com/mail/answer/10313
 func Dotnate(email, service, salt string) string {
 	address := strings.Split(email, "@")
 	username, host := address[0], address[1]
-
 	plus := ""
 
 	if i := strings.Index(username, "+"); i > -1 {
@@ -41,20 +40,21 @@ func Dotnate(email, service, salt string) string {
 	crc := crc64.Checksum(key, crc64.MakeTable(crc64.ECMA))
 	crcp := fmt.Sprintf("%063s", strconv.FormatInt(int64(crc), 2))
 	name := make([]byte, 0)
-
 	size := len(username)
-	index := int(crc)
+	index := 0
 
-	if index < 0 {
-		index *= -1
+	if modulus := len(crcp) - size; modulus > 0 {
+		index = int(int32(crc)) % modulus
+
+		if index < 0 {
+			index *= -1
+		}
 	}
-
-	index = index % (63 - size)
 
 	for i := 0; i < size; i++ {
 		name = append(name, username[i])
 
-		if crcp[i+index] == '1' && i < size-1 {
+		if i+index < len(crcp) && crcp[i+index] == '1' && i < size-1 {
 			name = append(name, '.')
 		}
 	}
