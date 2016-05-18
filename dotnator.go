@@ -1,10 +1,8 @@
-package main
+package dotnator
 
 import (
 	"fmt"
 	"hash/crc64"
-	"net/mail"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -26,28 +24,11 @@ From https://support.google.com/mail/answer/10313
 	remove the dots (and/or the plus sign and what comes after) from the addresses they receive.
 	Also, the services you use can simply consider your address as not valid.
 
-	Usage: dotnator <email address> <service name or address> [salt]
 */
 
-func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage:\n\tdotnator <email address> <service name or address> [salt]")
-		os.Exit(1)
-	}
-
-	if _, err := mail.ParseAddress(os.Args[1]); err != nil {
-		fmt.Fprintln(os.Stderr, "invalid email address")
-		os.Exit(1)
-	}
-
-	email := strings.Split(os.Args[1], "@")
-	username, host := email[0], email[1]
-	service := os.Args[2]
-	salt := ""
-
-	if len(os.Args) == 4 {
-		salt = os.Args[3]
-	}
+func Dotnate(email, service, salt string) string {
+	address := strings.Split(email, "@")
+	username, host := address[0], address[1]
 
 	plus := ""
 
@@ -78,5 +59,5 @@ func main() {
 		}
 	}
 
-	fmt.Printf("%s%s@%s\n", name, plus, host)
+	return fmt.Sprintf("%s%s@%s", name, plus, host)
 }
