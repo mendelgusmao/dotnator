@@ -38,13 +38,13 @@ func Dotnate(email, service, salt string) string {
 
 	key := append([]byte(salt), []byte(service)...)
 	crc := crc64.Checksum(key, crc64.MakeTable(crc64.ECMA))
-	crcp := fmt.Sprintf("%063s", strconv.FormatInt(int64(crc), 2))
+	mask := fmt.Sprintf("%063s", strconv.FormatInt(int64(crc), 2))
 	name := make([]byte, 0)
 	size := len(username)
 	index := 0
 
-	if modulus := len(crcp) - size; modulus > 0 {
-		index = int(int32(crc)) % modulus
+	if modulus := len(mask) - size; modulus > 0 {
+		index = int(crc>>32) % modulus
 
 		if index < 0 {
 			index *= -1
@@ -52,10 +52,10 @@ func Dotnate(email, service, salt string) string {
 	}
 
 	for i := 0; i < size; i++ {
-		name = append(name, username[i])
-
-		if i+index < len(crcp) && crcp[i+index] == '1' && i < size-1 {
-			name = append(name, '.')
+		if i+index < len(mask) && mask[i+index] == '1' && i < size-1 {
+			name = append(name, username[i], '.')
+		} else {
+			name = append(name, username[i])
 		}
 	}
 
