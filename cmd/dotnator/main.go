@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/mail"
 	"os"
@@ -28,22 +29,29 @@ From https://support.google.com/mail/answer/10313
 	Usage: dotnator <email address> <service name or address> [salt]
 */
 
+var (
+	algorithm = flag.String("a", "crc64:ecma", "algorithm (crc64[:ecma], crc64:iso, md5, sha1, sha256, sha512)")
+	salt      = flag.String("s", "", "salt for key")
+)
+
 func main() {
+	flag.Parse()
+
 	if len(os.Args) < 3 {
-		fmt.Println("Usage:\n\tdotnator <email address> <service name or address> [salt]")
-		os.Exit(1)
+		flag.Usage()
 	}
 
-	if _, err := mail.ParseAddress(os.Args[1]); err != nil {
+	if _, err := mail.ParseAddress(flag.Args()[0]); err != nil {
 		fmt.Fprintln(os.Stderr, "invalid email address")
 		os.Exit(1)
 	}
 
-	salt := ""
+	address, err := dotnator.Dotnate(flag.Args()[0], flag.Args()[1], *salt, *algorithm)
 
-	if len(os.Args) == 4 {
-		salt = os.Args[3]
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "invalid email address")
+		os.Exit(1)
 	}
 
-	fmt.Println(dotnator.Dotnate(os.Args[1], os.Args[2], salt))
+	fmt.Println(address)
 }

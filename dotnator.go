@@ -1,7 +1,13 @@
 package dotnator
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/binary"
 	"fmt"
+	"hash"
 	"hash/crc64"
 	"strconv"
 	"strings"
@@ -26,7 +32,7 @@ From https://support.google.com/mail/answer/10313
 
 */
 
-func Dotnate(email, service, salt string) string {
+func Dotnate(email, service, salt, algorithm string) (string, error) {
 	address := strings.Split(email, "@")
 	username, host := address[0], address[1]
 	plus := ""
@@ -37,14 +43,19 @@ func Dotnate(email, service, salt string) string {
 	}
 
 	key := append([]byte(salt), []byte(service)...)
-	crc := crc64.Checksum(key, crc64.MakeTable(crc64.ECMA))
-	mask := fmt.Sprintf("%063s", strconv.FormatInt(int64(crc), 2))
+	checksum, err := checksum(key, algorithm)
+
+	if err != nil {
+		return "", err
+	}
+
+	mask := fmt.Sprintf("%063s", strconv.FormatInt(checksum, 2))
 	name := make([]byte, 0)
 	size := len(username)
 	index := 0
 
 	if modulus := len(mask) - size; modulus > 0 {
-		index = int(crc>>32) % modulus
+		index = int(checksum>>32) % modulus
 
 		if index < 0 {
 			index *= -1
@@ -59,5 +70,65 @@ func Dotnate(email, service, salt string) string {
 		}
 	}
 
-	return fmt.Sprintf("%s%s@%s", name, plus, host)
+	return fmt.Sprintf("%s%s@%s", name, plus, host), nil
+}
+
+func checksum(key []byte, algorithm string) (int64, error) {
+	hash := func(h hash.Hash, in []byte) int64 {
+		h.Write(in)
+		result := h.Sum(nil)
+		size := len(result)
+
+		for i := 0; i < 64/greatestCommonDivisor(64, size)-1 && len(result) <= 64; i++ {
+			result = append(result, result[i*size:]...)
+		}
+
+		return int64(binary.BigEndian.Uint64(result[0:64]))
+	}
+
+	switch algorithm {
+	case "md5":
+		return hash(md5.New(), key), nil
+	case "sha1":
+		return hash(sha1.New(), key), nil
+	case "sha256":
+		return hash(sha256.New(), key), nil
+	case "sha512":
+		return hash(sha512.New(), key), nil
+	case "crc64:iso":
+		return int64(crc64.Checksum(key, crc64.MakeTable(crc64.ISO))), nil
+	case "crc64:ecma", "crc64":
+		return int64(crc64.Checksum(key, crc64.MakeTable(crc64.ECMA))), nil
+	default:
+		return 0, fmt.Errorf("algorithm '%s' not implemented", algorithm)
+	}
+}
+
+// https://en.wikipedia.org/wiki/Binary_GCD_algorithm
+func greatestCommonDivisor(u, v int) int {
+	if u == v || v == 0 {
+		return u
+	}
+
+	if u == 0 {
+		return v
+	}
+
+	if ^u&1 == 1 {
+		if v&1 == 1 {
+			return greatestCommonDivisor(u>>1, v)
+		}
+
+		return greatestCommonDivisor(u>>1, v>>1) << 1
+	}
+
+	if ^v&1 == 1 {
+		return greatestCommonDivisor(u, v>>1)
+	}
+
+	if u > v {
+		return greatestCommonDivisor((u-v)>>1, v)
+	}
+
+	return greatestCommonDivisor((v-u)>>1, u)
 }
